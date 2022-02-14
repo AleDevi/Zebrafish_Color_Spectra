@@ -4,26 +4,27 @@ library(stringr)
 library(ggplot2)
 library(zoo)
 
-
 #from Wouter
 #files <- list.files("D:/DroppBoxx/Dropbox/Exp. Priming Brain Lines/Sperm Lines Velocities/Pre/", ".xls", full.names = TRUE)
 #frames <- lapply(files, read_xls, sheet = 1, skip = 9)
 #names(frames) <- substr(basename(files), 1, nchar(basename(files)) - 4)
 #dat_pre <- bind_rows(frames, .id = "male_id")
 
-setwd("C:/Users/Color&Sound/OneDrive/Desktop/ZebrafishSpectra/Experimental")
-filenames<-list.files("C:/Users/Color&Sound/OneDrive/Desktop/ZebrafishSpectra/Experimental")
+#setwd("C:/Users/Color&Sound/OneDrive/Desktop/ZebrafishSpectra/Experimental") ##temporary directory to save data
 
-###Getting the names for the datasets in the list 
-filenames<-list.files("C:/Users/Color&Sound/OneDrive/Desktop/ZebrafishSpectra/Experimental")
+###Getting the names of the datasets in folder (my dataset)
+filenames<-list.files("C:/Users/Color&Sound/Experiments/Padova/Zebrafish Odour Choice/ZebrafishSpectra/Experimental",full.names=T)
 
+#Create a list used for its names. The names of this list will be used later
 listnames<-sapply(filenames[1:(length(filenames)-1)], 
                   read.csv,
                   sep="\t", 
                   nrows = 1, 
                   header =T,
-                  simplify = FALSE) ####Per fare un file con una serie di "oggetti" 
+                  simplify = FALSE) ####
 
+#Change the names of the list removing the path
+names(listnames)<-sub("C:/Users/Color&Sound/Experiments/Padova/Zebrafish Odour Choice/ZebrafishSpectra/Experimental/", replacement="",x=names(listnames))
 
 #for some reason the dataframe in the names list has always one extra column
 #the function below removes it
@@ -40,6 +41,7 @@ ncol(listnames[[1]])
 ncol(listnames2[[1]])
 #yes
 
+####Working now on the datasets
 #getting all the datasets
 lista<-sapply(filenames[1:(length(filenames)-1)], 
               read.csv,sep="\t",
@@ -47,8 +49,13 @@ lista<-sapply(filenames[1:(length(filenames)-1)],
               skip=9,
               simplify = FALSE) ####Per fare un file con una serie di "oggetti" 
 
-##remove rows out of NM interest to the datasets in the list
-lista2<-lapply(lista, function(x) x[c(-278:-1,-1458:-nrow(x)),])
+names(lista)<-sub("C:/Users/Color&Sound/Experiments/Padova/Zebrafish Odour Choice/ZebrafishSpectra/Experimental/", replacement="",x=names(lista))
+
+##remove rows out of NM interest to the datasets in the list. NB: these numbers works with 
+##that specific spectrometer and probably need to be changed if another instrument is used 
+lista2<-lapply(lista, function(x) 
+        x[c(-278:-1,-1458:-nrow(x)),]) #these rows numbers keep everything
+                                       #between 250 and 700
 
 ##a function to change names to all colums of all datasets in the list
 newnames<-function (x,y){for(i in c(1:length(x))){colnames(x[[i]])<-colnames(y[[i]])
@@ -56,8 +63,15 @@ x}
         x
 }
 
+#newnames<-function (x,y){for(i in c(1:length(x))){names(x)<-names(y)
+#        colnames(x[[i]])<-colnames(y[[i]])
+#x}
+#        x
+#}
+
 #Applying the function to the list 
 lista3<-newnames(lista2,listnames2)
+
 
 #Keep only the columns with the transmission data
 lista4<-lapply(lista3, select,contains("Transmission"))
