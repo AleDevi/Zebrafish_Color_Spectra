@@ -156,7 +156,7 @@ for(i in c(1:length(x))){
 y}
 
 AllSpAverage<-smootspectra(lista3,Wavelength)
-AllSpAverage<-lapply(AllSpAverage,filter,NM>=300) #remove useless part of the spectra
+AllSpAverage<-lapply(AllSpAverage,filter,NM>=300,NM<=700) #remove useless part of the spectra
 
 AllSpAverage$F17 %>% ggplot(aes(x=NM))+geom_point(aes(y=LU1),color="red")+
         geom_point(aes(y=LU2),color="yellow")+
@@ -168,190 +168,39 @@ SpAverage<-bind_rows(AllSpAverage, .id = "ID")
 
 Spectra_average<-SpAverage %>%pivot_longer(!ID&!NM, names_to = "BodyPart", values_to = "Reflectance")
 Spectra_average$Body<-substr(Spectra_average$BodyPart, 1,nchar(Spectra_average$BodyPart)-1)
-Spectra_average<-Spectra_average %>%group_by(ID,NM,Body) %>%  summarise(Reflectance=(mean(Reflectance))) 
+Spectra_average$NM1<-Spectra_average$NM %>% round(,0)
+Spectra_average<-Spectra_average %>%filter %>% group_by(ID,Body,NM1) %>%  summarise(Reflectance=(mean(Reflectance))) 
 
-Spectra_average %>% ggplot(aes(x=NM, col=Body))+geom_point(aes(y=Reflectance))
 LINEDOWN<-Spectra_average %>% filter(Body=="LD")
 LINEUP<-Spectra_average %>% filter(Body=="LU")
 TAIL<-Spectra_average %>% filter(Body=="T")
 
-LINEDOWNL<-LINEDOWN%>%group_by(ID) %>% pivot_wider(ID,names_from=NM,values_from =Reflectance)
-LINEUP<-LINEUP%>%group_by(ID) %>% pivot_wider(ID,names_from=NM,values_from =Reflectance)
-TAIL<-TAIL%>%group_by(ID) %>% pivot_wider(ID,names_from=NM,values_from =Reflectance)
+LINEDOWNL<-LINEDOWN%>%group_by(ID) %>% pivot_wider(ID,names_from=NM1,values_from =Reflectance)
+LINEUPL<-LINEUP%>%group_by(ID) %>% pivot_wider(ID,names_from=NM1,values_from =Reflectance)
+TAILL<-TAIL%>%group_by(ID) %>% pivot_wider(ID,names_from=NM1,values_from =Reflectance)
 
 plot(names(LINEDOWNL),LINEDOWNL[2,])
-plot(names(LINEUP),LINEUP[2,])
-plot(names(TAIL),TAIL[2,])
+plot(names(LINEUPL),LINEUPL[2,])
+plot(names(LINEUPL),TAILL[2,])
 
-
+names(LINEDOWNL)
 #This dataset could be used to calculate the indexes of "reflectance" basically "Brightness" 
 #and "Orange Chroma" (See devigili et al EEE), which is the ratio of reflectance of 550-625/400-700
 
-TOTAL<-group_by(Spectra_Data_rows,Treatment,Measure, Male,MeasureMale) %>% summarise(TOTREF=sum(Reflectance))
-ORANGE<-filter(group_by(Spectra_Data_rows,Treatment,Measure, Male),NM<=625&NM>=550) %>% summarise(ORREF=sum(Reflectance))
-UV<-filter(group_by(Spectra_Data_rows,Treatment,Measure, Male),NM<=425&NM>=400) %>% summarise(UV=sum(Reflectance))
-
-
-
-##We need to pivot Spectra_Data_rows dataset in order to get the PCA
 library("FactoMineR")
 library("factoextra")
-FORPCA1_2<-Spectra_Data_rows %>% spread(NM,Reflectance) %>% filter(Measure !=3)
-PCA1_2<-PCA(FORPCA1_2[,c(7:ncol(FORPCA1_2))],scale.unit=T, ncp=5,graph=T)
-fviz_eig(PCA1_2)
 
-PCA1_2<-PCA(FORPCA1_2[,c(4:ncol(FORPCA1_2))],scale.unit=T, ncp=5,graph=T,quali.sup=1)
-summary(PCA1_2)
-plot(PCA1_2,habillage=1)
-
-WITHPCA1_2<-cbind(FORPCA1_2[,c(1:6)],PCA1_2$ind$coord[,c(1:3)])
-
-
-m1<-lmer(Dim.3~Treatment*Measure+(1|Male),WITHPCA1_2)
-Anova(m1)
-
-WITHPCA1_2  %>% ggplot(aes(x=Measure, col=Treatment))+geom_boxplot(aes(y=Dim.1))
-WITHPCA1_2  %>% ggplot(aes(x=Measure, col=Treatment))+geom_boxplot(aes(y=Dim.2))
-
-
-finalDataset<-cbind(OrangeChroma_2,WITHPCA1_2)
-
-finalDataset<-left_join(OrangeChroma_2, WITHPCA1_2, by = "MeasureMale")
-
-write.csv(file="spectradata.csv",finalDataset)
-#plot(PCA1_2, choix="var",shadow=T,select="contrib 25",cex=0.7)
-
-?PCA()
-plot(get_eigenvalue(PCA1_2)[,2])
-var<-get_pca(PCA1_2)
-plot(get_pca(PCA1_2)$contrib[,1])
-plot(get_pca(PCA1_2)$contrib[,2])
-plot(get_pca(PCA1_2)$contrib[,3])
-
-plot(get_pca(PCA1_2)$coord[,2])
-
-plot(PCA1_2$ind$coord[,1])
-
-head(var$coord)
-plot(var$coord[,1])
-plot(var$coord[,2])
-plot(var$coord[,3])
-
-FORPCA1_2[,c(1:6)]
-PCA1_2
-PCA1_2$eig
-
-FORPCA1_2
-
-
-plot(loadings[,1])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#############################################################################
-#############################################################################
-#############################################################################
-#############################################################################
-sapply(lista, simplify = FALSE)
-
-sapply(lista, nrow) ####per contare le righe degli oggetti nella "lista"
-lapply(mean)
-justmean<-function(x){rowMeans(x[,2:c(ncol(x))])}
-
-sapply(lista,justmean)
-
-lista[,c(2:3)]
-
-Test<-lista[[]]
-justmean(lista[[1]])
-
-rea
-
-
-
-###################################################################################################
-#######Per leggere, unire in colonna e poi salvare su un file tutti i file CSV di una cartella#####
-###################################################################################################
-
-
-
-#ALLSPECTRA<-do.call("cbind", sapply(filenames, read.csv, simplify = FALSE)) ##questo quasi funziona MA non riesco a ridurre il nome del file. NB:Attacca il nome del file alla PRIMA RIGA dei file.
-ALLSPECTRA<-do.call("cbind", sapply(filenames, function(x){read.csv(file=x,header=FALSE)}, simplify = FALSE)) ##NON riduce il nome del file. Non usa la prima riga dei file come header. 
-
-#prove data<-sapply(filenames, function(x){read.csv(file=x,na.strings=400:700, header=FALSE)}, simplify = FALSE)
-#prove data2<-read(data[complete.cases(data), ])
-#prove data2
-#prove ALLSPECTRA<-do.call("cbind", data) ##NON riduce il nome del file. Non usa la prima riga dei file come header. NON legge la rima colonna di ogni file .CSV
-
-write.table(ALLSPECTRA,file="Allspectra.csv",sep=",",row.names=F)
-
-
-############################################################################################################################################
-####pezzi ci codici e comandi raccattati in internet###
-
-filenames <- list.files()
-do.call("cbind", lapply(filenames, read.csv(file=x,header=FALSE), header = TRUE))
-
-
-############################################################################################################################################
-####altri pezzi da stakoverflow. Non funzionano benissimo....
-
-
-###setwd() serve per decidere la directory con il "path". NB il path va fra virgolette
-
-
-mypath<-"C:/Users/Color&Sound/OneDrive/Desktop/Orange intensity ColourWorker"
-
-multmerge = function(mypath){
-  filenames=list.files(path=mypath, full.names=TRUE)
-  datalist = lapply(filenames, function(x){read.csv(file=x,header=FALSE)})
-  #Reduce(function(x,y) {merge(x,y)}, datalist)
-}
-mydata=multmerge("C:/Users/Color&Sound/OneDrive/Desktop/Orange intensity ColourWorker")
-
-View(mydata)
+LD_PCA<-PCA(LINEDOWNL[,c(2:ncol(LINEDOWNL))],scale.unit=T,graph=T,quali.sup=1)
+fviz_eig(LD_PCA)
+summary(LD_PCA)
+plot(LD_PCA)
+get_eigenvalue(LD_PCA)
+plot(LD_PCA$var$contrib[,1])
+
+
+LD_PCA<-PCA(LINEDOWNL[,c(2:ncol(LINEDOWNL))],scale.unit=T,graph=T,quali.sup=1)
+fviz_eig(LD_PCA)
+summary(LD_PCA)
+plot(LD_PCA)
+get_eigenvalue(LD_PCA)
+plot(LD_PCA$var$contrib[,1])
