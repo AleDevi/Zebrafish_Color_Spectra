@@ -3,6 +3,7 @@ library(tidyr)
 library(stringr)
 library(ggplot2)
 library(zoo)
+library(corrplot)
 
 #from Wouter
 #files <- list.files("D:/DroppBoxx/Dropbox/Exp. Priming Brain Lines/Sperm Lines Velocities/Pre/", ".xls", full.names = TRUE)
@@ -52,12 +53,13 @@ lista<-sapply(filenames[1:(length(filenames)-1)],
               simplify = FALSE) ####Per fare un file con una serie di "oggetti" 
 
 names(lista)<-sub("C:/Users/Color&Sound/Experiments/Padova/Zebrafish Odour Choice/ZebrafishSpectra/Experimental/", replacement="",x=names(lista))
+names(lista)<-sub(".tsv", replacement="",x=names(lista))
 
 ##remove rows out of NM interest to the datasets in the list. NB: these numbers works with 
 ##that specific spectrometer and probably need to be changed if another instrument is used 
 lista2<-lapply(lista, function(x) 
         x[c(-278:-1,-1458:-nrow(x)),]) #these rows numbers keep everything
-                                       #between 250 and 700
+                                       #between 280 and 700
 
 ##also remember to read the WL
 Wavelength<-read.table("C:/Users/Color&Sound/Experiments/Padova/Zebrafish Odour Choice/ZebrafishSpectra/Experimental/Wavelength.txt", header=T)
@@ -75,16 +77,13 @@ x}
 }
 
 newnames<-function (x,y){for(i in c(1:length(x))){
-        names(x[i])<-sub(".tsv", replacement="",x=names(x[i])) #change nemes of datasets in the list
         colnames(x[[i]])<-colnames(y[[i]]) #change names of colums in the datasets of the list
 x[[i]]<-select(x[[i]],contains("Transmission"))} #keep only colums with "Transmission"
-x
+        names(x)<-sub(".tsv", replacement="",x=names(x)) #change nemes of datasets in the list
+        x
 }
 
 
-names(lista2[1])<-c(sub(".tsv", replacement="",x=names(lista2[1])))
-
-lista2[[1]]
 #Applying the function to the list 
 lista3<-newnames(lista2,listnames2)
 
@@ -149,50 +148,56 @@ for(i in c(1:length(x))){
         z<-w
         for(j in c(1:ncol(x[[i]]))){
                 z<-as.data.frame(cbind(z,rollmean(x[[i]][,j],f,align="center",fill="extend")))
-                #z<-z[z[1]>300,]
-         }
-        #names(z)<-c("NM",names(x[[i]]))
-        names(z)<-c("NM","LD1","LD2","LD3","LU1","LU2","LU3","T1","T2","T3")
-       y[[i]]<-z}
+                         }
+        z<-cbind(names(x[i]),z)
+                 names(z)<-c("ID","NM","LD1","LD2","LD3","LU1","LU2","LU3","T1","T2","T3")
+       y[[i]]<-z
+       }
 y}
 
 AllSpAverage<-smootspectra(lista3,Wavelength)
+AllSpAverage<-lapply(AllSpAverage,filter,NM>=300)
 
-plot(AllSpAverage$F1.tsv[,1],AllSpAverage$F1.tsv[,2])
+AllSpAverage$F17 %>% ggplot(aes(x=NM))+geom_point(aes(y=LU1),color="red")+
+        geom_point(aes(y=LU2),color="yellow")+
+        geom_point(aes(y=LU3),color="green")
 
-AllSpAverage$F1.tsv %>% ggplot(aes(x=Wavelength))+geom_point((aes(y=T1)))
+##Function to calculate an average value for the 3 categories.
+# It may be a a good move to pivot everything to have a 
+SpAverage<-bind_rows(AllSpAverage, .id = "ID")
 
-names(AllSpAverage$F1.tsv)
-######################################################################
-test[[2]]<-list(rollmean(lista3[[1]][,2],50,align="center",fill="extend"))
-test
+Spectra_average<-SpAverage %>%pivot_longer(!ID&!NM, names_to = "BodyPart", values_to = "Reflectance")
+Spectra_average$Body<-substr(Spectra_average$BodyPart, 1,nchar(Spectra_average$BodyPart)-1)
+Spectra_average<-Spectra_average %>%group_by(ID,NM,Body) %>%  summarise(Reflectance=(mean(Reflectance)))
 
-?avey<-vector("list",length(lista3))
-y<-list("123")
-str(lista3[[1]])
-names(lista3)
-lista3
+Spectra_average %>% ggplot(aes(x=NM, col=Body))+geom_point(aes(y=Reflectance))
 
-list(1,rollmean(lista3[[1]][,9],50,align="center",fill="extend"))
+unique(Spectra_average$NM)
+#This is what should be done to each dataset:
 
-test1<-lista3[[1]]
-test1[,1]
-lista3[[1]][,2]
 
-plot(AllSpAverage[[1]][[1]])
+single<-AllSpAverage$F17
 
 
 
-########################################
-sapply(AllSpAverage,length)
-names(AllSpAverage) <- substr(names(AllSpAverage),1,nchar(names(AllSpAverage)) - 8)
-raw_Spectra_Data <- bind_rows(AllSpAverage, .id = "male_id")
-NM<-seq(400,700, by=5)
-Spectra_Data_col<-cbind(NM,raw_Spectra_Data)
-plot(Spectra_Data_col$NM,Spectra_Data_col$m1m1) #test if it worked
-str(Spectra_Data_col)      
+Spectra_Data_rows<-single %>% 
+        pivot_longer(!NM, names_to = "BodyPart", values_to = "Reflectance")
+Spectra_Data_rows$Body<-substr(Spectra_Data_rows$BodyPart, 1,nchar(Spectra_Data_rows$BodyPart)-1)
+Spectra_average<-Spectra_Data_rows %>%group_by(NM,Body) %>%  summarise(Reflectance=(mean(Reflectance)))
+
+Spectra_Data_rows %>% ggplot(aes(x=NM))+geom_point(aes(y=Reflectance,col=Body))
+Spectra_average %>% ggplot(aes(x=NM))+geom_point(aes(y=Reflectance,col=Body))
 
 
+AllSpAverageTURN<-lapply(AllSpAverage,pivot_longer,!NM, names_to = "BodyPart", values_to = "Reflectance")
+AllSpAverageTURN2<-lapply(AllSpAverageTURN,mutate, Body,BodyPart)
+SpAverage<-lapply(AllSpAverageTURN2,group_by,Body,summarise(Reflectance=(mean(Reflectance)))
+)
+
+AllSpAverageTURN2 <- lapply(AllSpAverageTURN2, as.data.frame)
+unnest(AllSpAverageTURN2, "Body") %>%
+        group_by(Body, Reflectance) %>%
+        summarise(Reflectance = sum(Reflectance))
 
 
 #test<-cbind(Spectra_Data_col[,1],gather(Spectra_Data_col[,2:length(Spectra_Data_col)])) #this is another method to put all the males in column. The line below is a bit mmore efficient
