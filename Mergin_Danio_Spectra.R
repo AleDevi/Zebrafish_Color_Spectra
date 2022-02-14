@@ -156,7 +156,7 @@ for(i in c(1:length(x))){
 y}
 
 AllSpAverage<-smootspectra(lista3,Wavelength)
-AllSpAverage<-lapply(AllSpAverage,filter,NM>=300)
+AllSpAverage<-lapply(AllSpAverage,filter,NM>=300) #remove useless part of the spectra
 
 AllSpAverage$F17 %>% ggplot(aes(x=NM))+geom_point(aes(y=LU1),color="red")+
         geom_point(aes(y=LU2),color="yellow")+
@@ -168,73 +168,20 @@ SpAverage<-bind_rows(AllSpAverage, .id = "ID")
 
 Spectra_average<-SpAverage %>%pivot_longer(!ID&!NM, names_to = "BodyPart", values_to = "Reflectance")
 Spectra_average$Body<-substr(Spectra_average$BodyPart, 1,nchar(Spectra_average$BodyPart)-1)
-Spectra_average<-Spectra_average %>%group_by(ID,NM,Body) %>%  summarise(Reflectance=(mean(Reflectance)))
+Spectra_average<-Spectra_average %>%group_by(ID,NM,Body) %>%  summarise(Reflectance=(mean(Reflectance))) 
 
 Spectra_average %>% ggplot(aes(x=NM, col=Body))+geom_point(aes(y=Reflectance))
+LINEDOWN<-Spectra_average %>% filter(Body=="LD")
+LINEUP<-Spectra_average %>% filter(Body=="LU")
+TAIL<-Spectra_average %>% filter(Body=="T")
 
-unique(Spectra_average$NM)
-#This is what should be done to each dataset:
+LINEDOWNL<-LINEDOWN%>%group_by(ID) %>% pivot_wider(ID,names_from=NM,values_from =Reflectance)
+LINEUP<-LINEUP%>%group_by(ID) %>% pivot_wider(ID,names_from=NM,values_from =Reflectance)
+TAIL<-TAIL%>%group_by(ID) %>% pivot_wider(ID,names_from=NM,values_from =Reflectance)
 
-
-single<-AllSpAverage$F17
-
-
-
-Spectra_Data_rows<-single %>% 
-        pivot_longer(!NM, names_to = "BodyPart", values_to = "Reflectance")
-Spectra_Data_rows$Body<-substr(Spectra_Data_rows$BodyPart, 1,nchar(Spectra_Data_rows$BodyPart)-1)
-Spectra_average<-Spectra_Data_rows %>%group_by(NM,Body) %>%  summarise(Reflectance=(mean(Reflectance)))
-
-Spectra_Data_rows %>% ggplot(aes(x=NM))+geom_point(aes(y=Reflectance,col=Body))
-Spectra_average %>% ggplot(aes(x=NM))+geom_point(aes(y=Reflectance,col=Body))
-
-
-AllSpAverageTURN<-lapply(AllSpAverage,pivot_longer,!NM, names_to = "BodyPart", values_to = "Reflectance")
-AllSpAverageTURN2<-lapply(AllSpAverageTURN,mutate, Body,BodyPart)
-SpAverage<-lapply(AllSpAverageTURN2,group_by,Body,summarise(Reflectance=(mean(Reflectance)))
-)
-
-AllSpAverageTURN2 <- lapply(AllSpAverageTURN2, as.data.frame)
-unnest(AllSpAverageTURN2, "Body") %>%
-        group_by(Body, Reflectance) %>%
-        summarise(Reflectance = sum(Reflectance))
-
-
-#test<-cbind(Spectra_Data_col[,1],gather(Spectra_Data_col[,2:length(Spectra_Data_col)])) #this is another method to put all the males in column. The line below is a bit mmore efficient
-Spectra_Data_rows<-Spectra_Data_col %>% 
-        pivot_longer(!NM, names_to = "MeasureMale", values_to = "Reflectance")
-str(Spectra_Data_rows)
-Spectra_Data_rows$Measure<-str_sub(Spectra_Data_rows$MeasureMale, start = 1, end = 2)
-Spectra_Data_rows$Male<-str_sub(Spectra_Data_rows$MeasureMale, start = 3, end = str_length(Spectra_Data_rows$MeasureMale))
-str_sub(Spectra_Data_rows$Measure,1,1)<-""
-Spectra_Data_rows$Measure<-as.factor(Spectra_Data_rows$Measure)
-Spectra_Data_rows$MeasureMale<-as.factor(Spectra_Data_rows$MeasureMale)
-Spectra_Data_rows$Male<-as.factor(Spectra_Data_rows$Male)
-str(Spectra_Data_rows)
-names(Spectra_Data_rows)
-Spectra_Data_rows %>% filter(Measure==1) %>% ggplot(aes(x=NM, col=Male))+geom_point(aes(y=Reflectance))
-Spectra_Data_rows  %>% ggplot(aes(x=NM, col=Male))+geom_point(aes(y=Reflectance))+facet_grid(Measure~.)
-Spectra_Data_rows  %>% ggplot(aes(x=as.factor(NM)))+geom_boxplot(aes(y=Reflectance))+facet_grid(Measure~.)
-
-#adding a treatment column
-fishnames<-read_excel("C:/Users/Color&Sound/Downloads/MalesTreatmentMortality.xlsx")
-fishnames$Male<-str_c("m",fishnames$Male_ID, sep = "", collapse = NULL)
-nametreat<-fishnames[,c(9,5,2,3)]
-
-Spectra_Data_rows<-left_join(Spectra_Data_rows, nametreat, by = "Male")
-
-Spectra_Data_rows  %>% ggplot(aes(x=NM, col=Treatment))+geom_point(aes(y=Reflectance))+facet_grid(Measure~.)
-
-std <- function(x) sd(x)/sqrt(length(x))
-
-AverageSpectrum<-Spectra_Data_rows %>% group_by(Treatment,Measure,NM) %>% summarise(Mean_spectrum=mean(Reflectance ),
-                                                                se=std(Reflectance))
-
-AverageSpectrum %>% ggplot(aes(x=NM))+
-        geom_pointrange(aes(y=Mean_spectrum,ymin=Mean_spectrum+se,ymax=Mean_spectrum-se,col=Treatment))+
-        facet_wrap(~Measure)
-
-Spectra_Data_rows %>% filter(Measure!=3)  %>% ggplot(aes(x=NM, col=Measure))+geom_point(aes(y=Reflectance,col=Measure))+facet_wrap(~Male)
+plot(names(LINEDOWNL),LINEDOWNL[2,])
+plot(names(LINEUP),LINEUP[2,])
+plot(names(TAIL),TAIL[2,])
 
 
 #This dataset could be used to calculate the indexes of "reflectance" basically "Brightness" 
@@ -244,22 +191,6 @@ TOTAL<-group_by(Spectra_Data_rows,Treatment,Measure, Male,MeasureMale) %>% summa
 ORANGE<-filter(group_by(Spectra_Data_rows,Treatment,Measure, Male),NM<=625&NM>=550) %>% summarise(ORREF=sum(Reflectance))
 UV<-filter(group_by(Spectra_Data_rows,Treatment,Measure, Male),NM<=425&NM>=400) %>% summarise(UV=sum(Reflectance))
 
-
-#check male 1 first measure:
-sum(Spectra_Data_rows[Spectra_Data_rows$Male=="m1"&Spectra_Data_rows$Measure=="1",3])
-#put together the two datasets and calculate the Chroma Index
-OrangeChroma<-cbind(TOTAL,ORANGE[,4],UV[,4])
-OrangeChroma$Chroma<-(OrangeChroma$ORREF/OrangeChroma$TOTREF)
-OrangeChroma$UVChroma<-(OrangeChroma$UV/OrangeChroma$TOTREF)
-OrangeChroma[OrangeChroma$Measure!=3,] %>% ggplot(aes(x=Measure))+geom_boxplot(aes(y=Chroma,col=Treatment))
-OrangeChroma[OrangeChroma$Measure!=3,] %>% ggplot(aes(x=Measure))+geom_boxplot(aes(y=TOTREF,col=Treatment))
-OrangeChroma[OrangeChroma$Measure!=3,] %>% ggplot(aes(x=Measure))+geom_boxplot(aes(y=UVChroma,col=Treatment))
-
-
-m1<-lmer(UVChroma~Measure+Treatment+(1|Male),OrangeChroma[OrangeChroma$Measure!=3,])
-Anova(m1)
-
-OrangeChroma_2<-OrangeChroma[OrangeChroma$Measure!=3,]
 
 
 ##We need to pivot Spectra_Data_rows dataset in order to get the PCA
