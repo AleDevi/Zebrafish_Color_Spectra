@@ -170,14 +170,18 @@ Spectra_average<-SpAverage %>%pivot_longer(!ID&!NM, names_to = "BodyPart", value
 Spectra_average$Body<-substr(Spectra_average$BodyPart, 1,nchar(Spectra_average$BodyPart)-1)
 Spectra_average$NM1<-Spectra_average$NM %>% round(,0)
 Spectra_average<-Spectra_average %>%filter %>% group_by(ID,Body,NM1) %>%  summarise(Reflectance=(mean(Reflectance))) 
+Spectra_average$NM5<-rep(rep(c(rep(seq(300,695,5),each=5),700),times=3),times=72)
 
 LINEDOWN<-Spectra_average %>% filter(Body=="LD")
 LINEUP<-Spectra_average %>% filter(Body=="LU")
 TAIL<-Spectra_average %>% filter(Body=="T")
 
-LINEDOWNL<-LINEDOWN%>%group_by(ID) %>% pivot_wider(ID,names_from=NM1,values_from =Reflectance)
-LINEUPL<-LINEUP%>%group_by(ID) %>% pivot_wider(ID,names_from=NM1,values_from =Reflectance)
-TAILL<-TAIL%>%group_by(ID) %>% pivot_wider(ID,names_from=NM1,values_from =Reflectance)
+
+
+LINEDOWNL<-LINEDOWN%>%group_by(ID) %>% pivot_wider(ID,names_from=NM5,values_from =Reflectance)
+LINEUPL<-LINEUP%>%group_by(ID) %>% pivot_wider(ID,names_from=NM5,values_from =Reflectance)
+TAILL<-TAIL%>%group_by(ID) %>% pivot_wider(ID,names_from=NM5,values_from =Reflectance)
+
 
 plot(names(LINEDOWNL),LINEDOWNL[2,])
 plot(names(LINEUPL),LINEUPL[2,])
@@ -197,10 +201,20 @@ plot(LD_PCA)
 get_eigenvalue(LD_PCA)
 plot(LD_PCA$var$contrib[,1])
 
+P
 
-LD_PCA<-PCA(LINEDOWNL[,c(2:ncol(LINEDOWNL))],scale.unit=T,graph=T,quali.sup=1)
-fviz_eig(LD_PCA)
-summary(LD_PCA)
-plot(LD_PCA)
-get_eigenvalue(LD_PCA)
-plot(LD_PCA$var$contrib[,1])
+LU_PCA<-PCA(LINEUPL[,c(2:ncol(LINEUPL))],scale.unit=T,graph=T,quali.sup=1)
+fviz_eig(LU_PCA)
+summary(LU_PCA)
+plot(LU_PCA)
+get_eigenvalue(LU_PCA)
+plot(LU_PCA$var$contrib[,1])
+
+T_PCA<-PCA(TAILL[,c(2:ncol(TAILL))],scale.unit=T,graph=T,quali.sup=1)
+fviz_eig(T_PCA)
+summary(T_PCA)
+plot(T_PCA)
+get_eigenvalue(T_PCA)
+plot(T_PCA$var$contrib[,2])
+
+?PCA()
