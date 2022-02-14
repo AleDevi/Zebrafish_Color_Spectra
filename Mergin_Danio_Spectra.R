@@ -12,6 +12,8 @@ library(zoo)
 
 #setwd("C:/Users/Color&Sound/OneDrive/Desktop/ZebrafishSpectra/Experimental") ##temporary directory to save data
 
+
+
 ###Getting the names of the datasets in folder (my dataset)
 filenames<-list.files("C:/Users/Color&Sound/Experiments/Padova/Zebrafish Odour Choice/ZebrafishSpectra/Experimental",full.names=T)
 
@@ -57,58 +59,63 @@ lista2<-lapply(lista, function(x)
         x[c(-278:-1,-1458:-nrow(x)),]) #these rows numbers keep everything
                                        #between 250 and 700
 
+##also remember to read the WL
+Wavelength<-read.table("C:/Users/Color&Sound/Experiments/Padova/Zebrafish Odour Choice/ZebrafishSpectra/Experimental/Wavelength.txt", header=T)
+Wavelength<-as.numeric(Wavelength[c(-278:-1,-1458:-2056),])
+
+length(Wavelength)
+
 ##a function to change names to all colums of all datasets in the list
+#and keep only those with "transmission" in it
 newnames<-function (x,y){for(i in c(1:length(x))){colnames(x[[i]])<-colnames(y[[i]])
 x}
         x
 }
 
-#newnames<-function (x,y){for(i in c(1:length(x))){names(x)<-names(y)
-#        colnames(x[[i]])<-colnames(y[[i]])
-#x}
-#        x
-#}
+newnames<-function (x,y){for(i in c(1:length(x))){colnames(x[[i]])<-colnames(y[[i]])
+x[[i]]<-select(x[[i]],contains("Transmission"))}
+x
+}
+
+
 
 #Applying the function to the list 
 lista3<-newnames(lista2,listnames2)
 
-
-#Keep only the columns with the transmission data
-lista4<-lapply(lista3, select,contains("Transmission"))
-
 #Check if some files have more measurements
-measurements<-data.frame((sapply(lista4,length)))
+measurements<-data.frame((sapply(lista3,length)))
 colnames(measurements)<-"Counts"
 morecounts<-filter(measurements,Counts!=9)
 measurements
 morecounts
 rownames(morecounts)
 
-test1<-cbind(Wavelength,lista4$M18B.tsv[,2:10])      
-test2<-gather(test1,key="Color",value="Transmission",names(test1)[2:ncol(test1)])
-test2 %>%
-        mutate(across(Color, factor, levels=c(unique(test2$Color)))) %>%##this to order the facets as they appear in the dataset
-        ggplot(aes(x=Wavelength)) + 
-        geom_point(aes(y=Transmission,col=Color))+ 
-        facet_wrap(Color~.)
+##########FINDING THE PROBLEMS WITH SOME DATSETS (Solved)
+#test1<-cbind(Wavelength,lista3$M18B.tsv[,2:10])      
+#test2<-gather(test1,key="Color",value="Transmission",names(test1)[2:ncol(test1)])
+#test2 %>%
+#        mutate(across(Color, factor, levels=c(unique(test2$Color)))) %>%##this to order the facets as they appear in the dataset
+#        ggplot(aes(x=Wavelength)) + 
+#        geom_point(aes(y=Transmission,col=Color))+ 
+#        facet_wrap(Color~.)
 
-test4<-cbind(Wavelength,lista4$M1B.tsv)      
-test5<-gather(test4,key="Color",value="Transmission",names(test4)[2:ncol(test4)])
-test5 %>%
-        mutate(across(Color, factor, levels=c(unique(test5$Color)))) %>%##this to order the facets as they appear in the dataset
-        ggplot(aes(x=Wavelength)) + ylim(0, 90)+
-        geom_point(aes(y=Transmission,col=Color))+facet_wrap(Color~.)
+#test4<-cbind(Wavelength,lista3$M1B.tsv)      
+#test5<-gather(test4,key="Color",value="Transmission",names(test4)[2:ncol(test4)])
+#test5 %>%
+#        mutate(across(Color, factor, levels=c(unique(test5$Color)))) %>%##this to order the facets as they appear in the dataset
+#        ggplot(aes(x=Wavelength)) + ylim(0, 90)+
+#        geom_point(aes(y=Transmission,col=Color))+facet_wrap(Color~.)
 
-test6<-cbind(Wavelength,lista4$F11.tsv)      
-test7<-gather(test6,key="Color",value="Transmission",names(test6)[2:ncol(test6)])
-test7 %>%
-        mutate(across(Color, factor, levels=c(unique(test7$Color)))) %>%##this to order the facets as they appear in the dataset
-        ggplot(aes(x=Wavelength)) + ylim(0, 50)+
-        geom_point(aes(y=Transmission,col=Color))+facet_wrap(Color~.)
+#test6<-cbind(Wavelength,lista3$F11.tsv)      
+#test7<-gather(test6,key="Color",value="Transmission",names(test6)[2:ncol(test6)])
+#test7 %>%
+#        mutate(across(Color, factor, levels=c(unique(test7$Color)))) %>%##this to order the facets as they appear in the dataset
+#        ggplot(aes(x=Wavelength)) + ylim(0, 50)+
+#        geom_point(aes(y=Transmission,col=Color))+facet_wrap(Color~.)
+
+#plot(cbind(lista3$M1B.tsv[2],lista3$F2.tsv[1]))
 
 
-
-cbind(lista4$M1B.tsv[2],lista4$F2.tsv[1])
 ####################################
 ###Smoothing the spectra and removing the extra NM (281,299)
 ##########################################################################
@@ -118,8 +125,8 @@ Wavelength<-as.numeric(Wavelength[c(-278:-1,-1458:-2056),])
 length(Wavelength)
 
 #See hoh it look like
-plot(Wavelength,lista4[[5]]$Transmission)
-plot(Wavelength,rollmean((lista4[[6]]$Transmission.1),50,align="center",fill="extend"))
+plot(Wavelength,lista3[[5]]$Transmission)
+plot(Wavelength,rollmean((lista3[[6]]$Transmission.1),50,align="center",fill="extend"))
 
 
 #This function to smooth all the spectra of a list and merge them in a single file
@@ -145,25 +152,25 @@ for(i in c(1:length(x))){
 y}
 
 
-AllSpAverage<-smootspectra(lista4,Wavelength)
+AllSpAverage<-smootspectra(lista3,Wavelength)
 
 plot(AllSpAverage$F1.tsv[,1],AllSpAverage$F1.tsv[,2])
 
 ######################################################################
-test[[2]]<-list(rollmean(lista4[[1]][,2],50,align="center",fill="extend"))
+test[[2]]<-list(rollmean(lista3[[1]][,2],50,align="center",fill="extend"))
 test
 
-?avey<-vector("list",length(lista4))
+?avey<-vector("list",length(lista3))
 y<-list("123")
-str(lista4[[1]])
-names(lista4)
-lista4
+str(lista3[[1]])
+names(lista3)
+lista3
 
-list(1,rollmean(lista4[[1]][,9],50,align="center",fill="extend"))
+list(1,rollmean(lista3[[1]][,9],50,align="center",fill="extend"))
 
-test1<-lista4[[1]]
+test1<-lista3[[1]]
 test1[,1]
-lista4[[1]][,2]
+lista3[[1]][,2]
 
 plot(AllSpAverage[[1]][[1]])
 
