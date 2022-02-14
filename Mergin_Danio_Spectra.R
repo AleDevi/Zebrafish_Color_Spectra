@@ -65,20 +65,26 @@ Wavelength<-as.numeric(Wavelength[c(-278:-1,-1458:-2056),])
 
 length(Wavelength)
 
-##a function to change names to all colums of all datasets in the list
+##a function to :
+# change list names removing ".tsv"
+#change names to all colums of all datasets in the list
 #and keep only those with "transmission" in it
 newnames<-function (x,y){for(i in c(1:length(x))){colnames(x[[i]])<-colnames(y[[i]])
 x}
         x
 }
 
-newnames<-function (x,y){for(i in c(1:length(x))){colnames(x[[i]])<-colnames(y[[i]])
-x[[i]]<-select(x[[i]],contains("Transmission"))}
+newnames<-function (x,y){for(i in c(1:length(x))){
+        names(x[i])<-sub(".tsv", replacement="",x=names(x[i])) #change nemes of datasets in the list
+        colnames(x[[i]])<-colnames(y[[i]]) #change names of colums in the datasets of the list
+x[[i]]<-select(x[[i]],contains("Transmission"))} #keep only colums with "Transmission"
 x
 }
 
 
+names(lista2[1])<-c(sub(".tsv", replacement="",x=names(lista2[1])))
 
+lista2[[1]]
 #Applying the function to the list 
 lista3<-newnames(lista2,listnames2)
 
@@ -119,23 +125,22 @@ rownames(morecounts)
 ####################################
 ###Smoothing the spectra and removing the extra NM (281,299)
 ##########################################################################
-Wavelength<-read.table("Wavelength.txt", header=T)
-Wavelength<-as.numeric(Wavelength[c(-278:-1,-1458:-2056),])
-
-length(Wavelength)
 
 #See hoh it look like
 plot(Wavelength,lista3[[5]]$Transmission)
+#see how it looks after smoothing
 plot(Wavelength,rollmean((lista3[[6]]$Transmission.1),50,align="center",fill="extend"))
 
-
-#This function to smooth all the spectra of a list and merge them in a single file
+#This function smooths all the spectra of a list and merge them in a single file
+#this is not really useful at the moment. It is better to work a bit more on the lists
 smootspectraF<-function(x,y){y<-y#x is the list of dataframes, y is the wavelength file
 for(i in c(1:length(x))){
         for(j in c(1:ncol(x[[i]]))){
                 y<-cbind(y,(rollmean(x[[i]][,j],50,align="center",fill="extend")))}
         }
 y}
+
+#dataset<-smootspectraF(lista3,Wavelength)
 
 #This function to smooth all the spectra of a list and merge them in a list
 smootspectra<-function(x,w,f=50){y<-vector("list",length(x))#x is the list of dataframes, y is the wavelength file
@@ -151,11 +156,13 @@ for(i in c(1:length(x))){
        y[[i]]<-z}
 y}
 
-
 AllSpAverage<-smootspectra(lista3,Wavelength)
 
 plot(AllSpAverage$F1.tsv[,1],AllSpAverage$F1.tsv[,2])
 
+AllSpAverage$F1.tsv %>% ggplot(aes(x=Wavelength))+geom_point((aes(y=T1)))
+
+names(AllSpAverage$F1.tsv)
 ######################################################################
 test[[2]]<-list(rollmean(lista3[[1]][,2],50,align="center",fill="extend"))
 test
