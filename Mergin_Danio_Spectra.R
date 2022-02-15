@@ -3,7 +3,6 @@ library(tidyr)
 library(stringr)
 library(ggplot2)
 library(zoo)
-library(corrplot)
 
 #from Wouter
 #files <- list.files("D:/DroppBoxx/Dropbox/Exp. Priming Brain Lines/Sperm Lines Velocities/Pre/", ".xls", full.names = TRUE)
@@ -169,21 +168,50 @@ SpAverage<-bind_rows(AllSpAverage, .id = "ID")
 Spectra_average<-SpAverage %>%pivot_longer(!ID&!NM, names_to = "BodyPart", values_to = "Reflectance")
 Spectra_average$Body<-substr(Spectra_average$BodyPart, 1,nchar(Spectra_average$BodyPart)-1)
 Spectra_average$NM1<-Spectra_average$NM %>% round(,0)
-Spectra_average<-Spectra_average %>%filter %>% group_by(ID,Body,NM1) %>%  summarise(Reflectance=(mean(Reflectance))) 
-Spectra_average$NM5<-rep(rep(c(rep(seq(300,695,5),each=5),700),times=3),times=72)
-Spectra_average$NM10<-rep(rep(c(rep(seq(300,690,10),each=10),700),times=3),times=72)
-##need to summarise
-
-LINEDOWN<-Spectra_average %>% filter(Body=="LD")
-LINEUP<-Spectra_average %>% filter(Body=="LU")
-TAIL<-Spectra_average %>% filter(Body=="T")
-
+Spectra_average2<-Spectra_average %>%filter %>% group_by(ID,Body,NM1) %>%  summarise(Reflectance=(mean(Reflectance))) 
+Spectra1<-Spectra_average2[,c(1:4)]
+##Below more grouping. It is easier to do it after the line above
+Spectra_average2$NM5<-rep(rep(c(rep(seq(300,695,5),each=5),700),times=3),times=72)
+Spectra_average2$NM10<-rep(rep(c(rep(seq(300,690,10),each=10),700),times=3),times=72)
+Spectra5<-Spectra_average2 %>% group_by(ID,Body,NM5) %>%  summarise(Reflectance=(mean(Reflectance))) 
+Spectra10<-Spectra_average2 %>% group_by(ID,Body,NM10) %>%  summarise(Reflectance=(mean(Reflectance))) 
 
 
-LINEDOWNL<-LINEDOWN%>%group_by(ID) %>% pivot_wider(ID,names_from=NM10,values_from =Reflectance)
-LINEUPL<-LINEUP%>%group_by(ID) %>% pivot_wider(ID,names_from=NM10,values_from =Reflectance)
-TAILL<-TAIL%>%group_by(ID) %>% pivot_wider(ID,names_from=NM10,values_from =Reflectance)
+##Have a look at the average spectra
+Spectra10 %>% filter(Body!="T")%>% group_by(Body,NM10) %>% summarise(Reflectance=(mean(Reflectance)))%>% ggplot(aes(x=NM10))+geom_point((aes(y=Reflectance,col=Body)))
+##Let's find if the lines have different HUEs (dominant colors)
+hueref<-Spectra10 %>%
+        group_by(ID, Body) %>%
+        summarise(Reflectance = max(Reflectance, na.rm=TRUE)) 
+hueNM<-left_join(hueref, Spectra10, by="Reflectance")
+hueNM$Sex<-substr(hueNM$ID.x,1,1)
+hue<-hueNM %>% group_by(Body.x,Sex) %>% summarise(meanhue=mean(NM10))
 
+hueNM %>% filter(Body.x!="T")  %>% ggplot(aes())+
+        geom_boxplot(aes(y=NM10,col=Body.x))+coord_flip()
+
+sexbody<-as.factor(paste(hueNM$Body.x[hueNM$Body.x!="T"],hueNM$Sex[hueNM$Body.x!="T"]))
+hueNM %>% filter(Body.x!="T")  %>% ggplot(aes())+
+        geom_boxplot(aes(y=NM10,col=sexbody))+coord_flip()
+
+#it seems so. let's see if males and females differ and if the lines are different
+lm1<-lm(NM10~Body.x*Sex,filter(hueNM,Body.y!="T"))
+anova(lm1)
+
+
+LINEDOWN<-Spectra1 %>% filter(Body=="LD")
+LINEUP<-Spectra1 %>% filter(Body=="LU")
+TAIL<-Spectra1 %>% filter(Body=="T")
+
+names(Spectra1)
+str(Spectra1)
+Spectra1$ID<-as.factor(Spectra1$ID)
+Spectra1$Body<-as.factor(Spectra1$Body)
+Spectra5 %>% ggplot(aes(x=as.factor(NM5)))+geom_boxplot(aes(y=Reflectance))+facet_wrap(~Body)
+
+LINEDOWNL<-LINEDOWN%>%group_by(ID) %>% pivot_wider(ID,names_from=NM1,values_from =Reflectance)
+LINEUPL<-LINEUP%>%group_by(ID) %>% pivot_wider(ID,names_from=NM1,values_from =Reflectance)
+TAILL<-TAIL%>%group_by(ID) %>% pivot_wider(ID,names_from=NM1,values_from =Reflectance)
 
 plot(names(LINEDOWNL),LINEDOWNL[2,])
 plot(names(LINEUPL),LINEUPL[2,])
@@ -196,12 +224,11 @@ plot(names(LINEUPL),TAILL[2,])
 library("FactoMineR")
 library("factoextra")
 
-LD_PCA<-PCA(LINEDOWNL[,c(2:ncol(LINEDOWNL))],scale.unit=T,graph=T,quali.sup=1)
+LD_PCA<-PCA(LINEDOWNL[,c(2:ncol(LINEDOWNL))],scale.unit=T,graph=T)
 fviz_eig(LD_PCA)
 summary(LD_PCA)
 plot(LD_PCA)
 get_eigenvalue(LD_PCA)
-plot(LD_PCA$var$contrib[,1])
 
 loadings<-LD_PCA$rotation
 
@@ -220,6 +247,6 @@ fviz_eig(T_PCA)
 summary(T_PCA)
 plot(T_PCA)
 get_eigenvalue(T_PCA)
-plot(T_PCA$var$contrib[,2])
+plot(T_PCA$var$contrib[,1])
 
 ?PCA()
