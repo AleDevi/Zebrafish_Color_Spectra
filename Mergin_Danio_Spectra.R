@@ -171,6 +171,8 @@ Spectra_average$Body<-substr(Spectra_average$BodyPart, 1,nchar(Spectra_average$B
 Spectra_average$NM1<-Spectra_average$NM %>% round(,0)
 Spectra_average<-Spectra_average %>%filter %>% group_by(ID,Body,NM1) %>%  summarise(Reflectance=(mean(Reflectance))) 
 Spectra_average$NM5<-rep(rep(c(rep(seq(300,695,5),each=5),700),times=3),times=72)
+Spectra_average$NM10<-rep(rep(c(rep(seq(300,690,10),each=10),700),times=3),times=72)
+##need to summarise
 
 LINEDOWN<-Spectra_average %>% filter(Body=="LD")
 LINEUP<-Spectra_average %>% filter(Body=="LU")
@@ -178,16 +180,16 @@ TAIL<-Spectra_average %>% filter(Body=="T")
 
 
 
-LINEDOWNL<-LINEDOWN%>%group_by(ID) %>% pivot_wider(ID,names_from=NM5,values_from =Reflectance)
-LINEUPL<-LINEUP%>%group_by(ID) %>% pivot_wider(ID,names_from=NM5,values_from =Reflectance)
-TAILL<-TAIL%>%group_by(ID) %>% pivot_wider(ID,names_from=NM5,values_from =Reflectance)
+LINEDOWNL<-LINEDOWN%>%group_by(ID) %>% pivot_wider(ID,names_from=NM10,values_from =Reflectance)
+LINEUPL<-LINEUP%>%group_by(ID) %>% pivot_wider(ID,names_from=NM10,values_from =Reflectance)
+TAILL<-TAIL%>%group_by(ID) %>% pivot_wider(ID,names_from=NM10,values_from =Reflectance)
 
 
 plot(names(LINEDOWNL),LINEDOWNL[2,])
 plot(names(LINEUPL),LINEUPL[2,])
 plot(names(LINEUPL),TAILL[2,])
 
-names(LINEDOWNL)
+
 #This dataset could be used to calculate the indexes of "reflectance" basically "Brightness" 
 #and "Orange Chroma" (See devigili et al EEE), which is the ratio of reflectance of 550-625/400-700
 
@@ -201,7 +203,10 @@ plot(LD_PCA)
 get_eigenvalue(LD_PCA)
 plot(LD_PCA$var$contrib[,1])
 
-P
+loadings<-LD_PCA$rotation
+
+plot(loadings[,5])
+
 
 LU_PCA<-PCA(LINEUPL[,c(2:ncol(LINEUPL))],scale.unit=T,graph=T,quali.sup=1)
 fviz_eig(LU_PCA)
