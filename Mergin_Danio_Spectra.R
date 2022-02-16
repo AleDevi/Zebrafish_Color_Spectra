@@ -246,11 +246,7 @@ get_eigenvalue(LD_PCA)
 ggplot()+geom_point(aes(y=LD_PCA$rotation[,1],x=seq(300,700,5)),col="blue")+
         geom_point(aes(y=LD_PCA$rotation[,2],x=seq(300,700,5)),col="red")#+
         geom_point(aes(y=LD_PCA$rotation[,3],x=seq(300,700,5)),col="green")#+
-        coord_cartesian(ylim=c(0,15))
-
-#PC1 95%
-#PC1 3%
-#PC1 1%
+        #coord_cartesian(ylim=c(0,15))
 
 LU_PCA<-prcomp(LINEUPL[,c(2:ncol(LINEUPL))],center = TRUE, scale. = TRUE)
 fviz_eig(LU_PCA)
@@ -259,21 +255,30 @@ get_eigenvalue(LU_PCA)
 ggplot()+geom_point(aes(y=LU_PCA$rotation[,1],x=seq(300,700,5)),col="blue")+
         geom_point(aes(y=LU_PCA$rotation[,2],x=seq(300,700,5)),col="red")#+
         geom_point(aes(y=LU_PCA$rotation[,3],x=seq(300,700,5)),col="green")#+
-        coord_cartesian(ylim=c(0,10))
-
-?seq_along()
+        #coord_cartesian(ylim=c(0,10))
 
 T_PCA<-prcomp(TAILL[,c(2:ncol(TAILL))],center = T, scale. = TRUE)
 summary(T_PCA)
 plot(T_PCA)
 fviz_eig(T_PCA)
 get_eigenvalue(T_PCA)
-
 ggplot()+geom_point(aes(y=T_PCA$rotation[,1],x=seq(300,700,5)),col="blue")+
         geom_point(aes(y=T_PCA$rotation[,2],x=seq(300,700,5)),col="red")+
         geom_point(aes(y=T_PCA$rotation[,3],x=seq(300,700,5)),col="green")#+
-        coord_cartesian(ylim=c(-0.25,0.25))
+        #coord_cartesian(ylim=c(-0.25,0.25))
 
 
+PC.Values<-as.data.frame(cbind(LD_PCA$x[,c(1:2)],LU_PCA$x[,c(1:2)],T_PCA$x[,c(1:2)]))
+names(PC.Values)<-c("LD_PC1","LD_PC2","LU_PC1","LU_PC2","T_PC1","T_PC2")
+PC.Values$ID<-TAILL[,1]
+PC.Values<-cbind(PC.Values$ID,PC.Values[,c(1:6)])
+names(PC.Values[,1])<-"ID"
+PC.Values$Sex<-substr(PC.Values$ID,1,1)
+m1<-lm(T_PC2~Sex,PC.Values)
+anova(m1)
 
+PC.ValuesL<-PC.Values %>%pivot_longer(!ID&!Sex, names_to = "BodyPart", values_to = "Reflectance")
+PC.ValuesL<-PC.Values %>%pivot_longer(!ID&!Sex, names_to = "BodyPart",values_to = "PCSCORE")
+PC.ValuesL
+PC.ValuesL %>% ggplot(aes(x=BodyPart ))+geom_boxplot(aes(col=Sex,y=PCSCORE))
 
