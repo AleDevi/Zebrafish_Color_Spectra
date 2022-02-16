@@ -178,36 +178,47 @@ Spectra10<-Spectra_average2 %>% group_by(ID,Body,NM10) %>%  summarise(Reflectanc
 
 
 ##Have a look at the average spectra
-Spectra10 %>% filter(Body!="T")%>% group_by(Body,NM10) %>% summarise(Reflectance=(mean(Reflectance)))%>% ggplot(aes(x=NM10))+geom_point((aes(y=Reflectance,col=Body)))
+Spectra1 %>% filter(Body!="T")%>% group_by(Body,NM1) %>% 
+        summarise(Reflectance=(mean(Reflectance)))%>% 
+        ggplot(aes(x=NM1))+geom_point((aes(y=Reflectance,col=Body)))
+Spectra5 %>% ggplot(aes(x=as.factor(NM5)))+geom_boxplot(aes(y=Reflectance))+facet_wrap(~Body)
+Spectra10 %>% ggplot(aes(x=as.factor(NM10)))+
+        geom_point(aes(y=Reflectance,col=Body),alpha=0.2)+
+        geom_boxplot(aes(y=Reflectance))+
+        facet_wrap(~Body)
+
 ##Let's find if the lines have different HUEs (dominant colors)
-hueref<-Spectra10 %>%
+hueref<-Spectra1 %>%
         group_by(ID, Body) %>%
         summarise(Reflectance = max(Reflectance, na.rm=TRUE)) 
-hueNM<-left_join(hueref, Spectra10, by="Reflectance")
+hueNM<-left_join(hueref, Spectra1, by="Reflectance")
 hueNM$Sex<-substr(hueNM$ID.x,1,1)
-hue<-hueNM %>% group_by(Body.x,Sex) %>% summarise(meanhue=mean(NM10))
+hue<-hueNM %>% group_by(Body.x,Sex) %>% summarise(meanhue=mean(NM1))
 
 hueNM %>% filter(Body.x!="T")  %>% ggplot(aes())+
-        geom_boxplot(aes(y=NM10,col=Body.x))+coord_flip()
+        geom_boxplot(aes(y=NM1,col=Body.x))+coord_flip()
 
 sexbody<-as.factor(paste(hueNM$Body.x[hueNM$Body.x!="T"],hueNM$Sex[hueNM$Body.x!="T"]))
 hueNM %>% filter(Body.x!="T")  %>% ggplot(aes())+
-        geom_boxplot(aes(y=NM10,col=sexbody))+coord_flip()
+        geom_boxplot(aes(y=NM1,col=sexbody))+coord_flip()+
+theme(axis.title.y=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank())+ggtitle("Average HUE (color dominance)")
 
 #it seems so. let's see if males and females differ and if the lines are different
-lm1<-lm(NM10~Body.x*Sex,filter(hueNM,Body.y!="T"))
+lm1<-lm(NM1~Body.x*Sex,filter(hueNM,Body.y!="T"))
 anova(lm1)
 
+#no differences between sexes in Tail Colouration
+lm2<-lm(NM1~Sex,filter(hueNM,Body.y=="T"))
+anova(lm2)
 
+
+#############
+##Let see what the PCA say
 LINEDOWN<-Spectra1 %>% filter(Body=="LD")
 LINEUP<-Spectra1 %>% filter(Body=="LU")
 TAIL<-Spectra1 %>% filter(Body=="T")
-
-names(Spectra1)
-str(Spectra1)
-Spectra1$ID<-as.factor(Spectra1$ID)
-Spectra1$Body<-as.factor(Spectra1$Body)
-Spectra5 %>% ggplot(aes(x=as.factor(NM5)))+geom_boxplot(aes(y=Reflectance))+facet_wrap(~Body)
 
 LINEDOWNL<-LINEDOWN%>%group_by(ID) %>% pivot_wider(ID,names_from=NM1,values_from =Reflectance)
 LINEUPL<-LINEUP%>%group_by(ID) %>% pivot_wider(ID,names_from=NM1,values_from =Reflectance)
@@ -217,36 +228,38 @@ plot(names(LINEDOWNL),LINEDOWNL[2,])
 plot(names(LINEUPL),LINEUPL[2,])
 plot(names(LINEUPL),TAILL[2,])
 
-
-#This dataset could be used to calculate the indexes of "reflectance" basically "Brightness" 
-#and "Orange Chroma" (See devigili et al EEE), which is the ratio of reflectance of 550-625/400-700
-
 library("FactoMineR")
 library("factoextra")
 
-LD_PCA<-PCA(LINEDOWNL[,c(2:ncol(LINEDOWNL))],scale.unit=T,graph=T)
+LD_PCA<-PCA(LINEDOWNL[,c(2:ncol(LINEDOWNL))],scale.unit=TRUE,graph=T)
 fviz_eig(LD_PCA)
 summary(LD_PCA)
 plot(LD_PCA)
-get_eigenvalue(LD_PCA)
+ggplot()+geom_point(aes(y=LD_PCA$var$contrib[,1],x=c(300:700)),col="blue")+
+        geom_point(aes(y=LD_PCA$var$contrib[,2],x=c(300:700)),col="red")+
+        coord_cartesian(ylim=c(0,1))
 
-loadings<-LD_PCA$rotation
+#PC1 95%
+#PC1 3%
+#PC1 1%
 
-plot(loadings[,5])
-
-
-LU_PCA<-PCA(LINEUPL[,c(2:ncol(LINEUPL))],scale.unit=T,graph=T,quali.sup=1)
+LU_PCA<-PCA(LINEUPL[,c(2:ncol(LINEUPL))],scale.unit=T,graph=T)
 fviz_eig(LU_PCA)
 summary(LU_PCA)
 plot(LU_PCA)
 get_eigenvalue(LU_PCA)
-plot(LU_PCA$var$contrib[,1])
+ggplot()+geom_point(aes(y=LU_PCA$var$contrib[,1],x=c(300:700)),col="blue")+
+        geom_point(aes(y=LU_PCA$var$contrib[,2],x=c(300:700)),col="red")+
+        coord_cartesian(ylim=c(0,1.5))
 
-T_PCA<-PCA(TAILL[,c(2:ncol(TAILL))],scale.unit=T,graph=T,quali.sup=1)
+
+T_PCA<-PCA(TAILL[,c(2:ncol(TAILL))],scale.unit=T,graph=T)
 fviz_eig(T_PCA)
 summary(T_PCA)
 plot(T_PCA)
 get_eigenvalue(T_PCA)
-plot(T_PCA$var$contrib[,1])
+ggplot()+geom_point(aes(y=T_PCA$var$contrib[,1],x=c(300:700)),col="blue")+
+        geom_point(aes(y=T_PCA$var$contrib[,2],x=c(300:700)),col="red")+
+        coord_cartesian(ylim=c(0,1))
 
-?PCA()
+
