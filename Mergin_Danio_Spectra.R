@@ -222,24 +222,24 @@ lm1<-lm(NM1~Body.x,filter(hueNM,Body.y!="T"))
 anova(lm1)
 
 #no differences between sexes in Tail Colouration
-lm2<-lm(NM1~Sex,filter(hueNM,Body.y=="T"))
+lm2<-lm(NM2~Sex,filter(hueNM,Body.y=="T"))
 anova(lm2)
 
 
 #############
 ##Let see what the PCA say
-LINEDOWN<-Spectra5 %>% filter(Body=="LD")
-LINEUP<-Spectra5 %>% filter(Body=="LU")
-TAIL<-Spectra5 %>% filter(Body=="T")
+LINEDOWN<-Spectra1 %>% filter(Body=="LD")
+LINEUP<-Spectra1 %>% filter(Body=="LU")
+TAIL<-Spectra1 %>% filter(Body=="T")
 
-LINEDOWNL<-LINEDOWN%>%group_by(ID) %>% pivot_wider(ID,names_from=NM5,values_from =Reflectance)
-LINEUPL<-LINEUP%>%group_by(ID) %>% pivot_wider(ID,names_from=NM5,values_from =Reflectance)
-TAILL<-TAIL%>%group_by(ID) %>% pivot_wider(ID,names_from=NM5,values_from =Reflectance)
+LINEDOWNL<-LINEDOWN%>%group_by(ID) %>% pivot_wider(ID,names_from=NM1,values_from =Reflectance)
+LINEUPL<-LINEUP%>%group_by(ID) %>% pivot_wider(ID,names_from=NM1,values_from =Reflectance)
+TAILL<-TAIL%>%group_by(ID) %>% pivot_wider(ID,names_from=NM1,values_from =Reflectance)
 
 group<-LINEDOWNL$ID
-LDBR<-rowSums(LINEDOWNL[,c(2:ncol(LINEDOWNL))])
-LUBR<-rowSums(LINEUPL[,c(2:ncol(LINEDOWNL))])
-TBR<-rowSums(TAILL[,c(2:ncol(TAILL))])
+LDBR<-rowSums(LINEDOWNL[,c(2:ncol(LINEDOWNL))])/400
+LUBR<-rowSums(LINEUPL[,c(2:ncol(LINEDOWNL))])/400
+TBR<-rowSums(TAILL[,c(2:ncol(TAILL))])/400
 
 
 library("FactoMineR")
@@ -249,9 +249,9 @@ LD_PCA<-prcomp(LINEDOWNL[,c(2:ncol(LINEDOWNL))],center = TRUE, scale. = TRUE)
 fviz_eig(LD_PCA)
 summary(LD_PCA)
 get_eigenvalue(LD_PCA)
-ggplot()+geom_point(aes(y=LD_PCA$rotation[,1],x=seq(300,700,5)),col="blue")+
-        geom_point(aes(y=LD_PCA$rotation[,2],x=seq(300,700,5)),col="red")#+
-        geom_point(aes(y=LD_PCA$rotation[,3],x=seq(300,700,5)),col="green")#+
+ggplot()+geom_point(aes(y=LD_PCA$rotation[,1],x=seq(300,700,1)),col="blue")+
+        geom_point(aes(y=LD_PCA$rotation[,2],x=seq(300,700,1)),col="red")#+
+        geom_point(aes(y=LD_PCA$rotation[,3],x=seq(300,700,1)),col="green")#+
         #coord_cartesian(ylim=c(0,15))
 
 LU_PCA<-prcomp(LINEUPL[,c(2:ncol(LINEUPL))],center = TRUE, scale. = TRUE)
@@ -268,8 +268,8 @@ summary(T_PCA)
 plot(T_PCA)
 fviz_eig(T_PCA)
 get_eigenvalue(T_PCA)
-ggplot()+geom_point(aes(y=T_PCA$rotation[,1],x=seq(300,700,5)),col="blue")+
-        geom_point(aes(y=T_PCA$rotation[,2],x=seq(300,700,5)),col="red")#+
+ggplot()+geom_point(aes(y=T_PCA$rotation[,1],x=seq(300,700,1)),col="blue")+
+        geom_point(aes(y=T_PCA$rotation[,2],x=seq(300,700,1)),col="red")#+
         #geom_point(aes(y=T_PCA$rotation[,3],x=seq(300,700,5)),col="green")#+
         #?coord_cartesian(ylim=c(-0.25,0.25))
 ?prcomp()
@@ -280,21 +280,26 @@ PC.Values$ID<-TAILL[,1]
 PC.Values<-cbind(PC.Values$ID,PC.Values[,c(1:6)])
 names(PC.Values[,1])<-"ID"
 PC.Values$Sex<-substr(PC.Values$ID,1,1)
-PC.Values<-cbind(PC.Values,LDBR,LUBR,TBR)
+PC.Values<-cbind(PC.Values,(LDBR),(LUBR),(TBR))
 names(PC.Values)<-c("ID","LD_PC1","LD_PC2","LU_PC1","LU_PC2","T_PC1","T_PC2","Sex","LD_BR","LU_BR","T_BR")
 
 plot(PC.Values$LD_PC1,PC.Values$LD_BR)
 plot(PC.Values$LU_PC1,PC.Values$LU_BR)
 plot(PC.Values$T_PC1,PC.Values$T_BR)
 
-corrplot::corrplot(PC.Values[,c(2:7,9:11)])
+library(corrplot)
+cordataset<-as.data.frame(PC.Values[,c(2:7,9:11)])
+testRes = cor.mtest(cordataset, conf.level = 0.95)
+corrplot(cor(cordataset),p.mat = testRes$p, sig.level = 0.01, addrect = 2)
 
-write.csv(PC.Values,"C:/Users/Color&Sound/Experiments/Padova/Zebrafish Odour Choice/ZebrafishSpectra/PCAVALUES.csv")
+
+write.csv(PC.Values,"C:/Users/Color&Sound/Experiments/Padova/Zebrafish Odour Choice/ZebrafishSpectra/PCAVALUES1NM.csv")
 m1<-lm(T_PC2~Sex,PC.Values)
 anova(m1)
 
 PC.ValuesL<-PC.Values %>%pivot_longer(!ID&!Sex, names_to = "BodyPart", values_to = "Reflectance")
 PC.ValuesL<-PC.Values %>%pivot_longer(!ID&!Sex, names_to = "BodyPart",values_to = "PCSCORE")
 PC.ValuesL
+PC.ValuesL %>% filter(BodyPart!=c("LD_BR","LU_BR","T_BR")) %>% ggplot(aes(x=BodyPart ))+geom_boxplot(aes(col=Sex,y=PCSCORE))
 PC.ValuesL %>% ggplot(aes(x=BodyPart ))+geom_boxplot(aes(col=Sex,y=PCSCORE))
 
