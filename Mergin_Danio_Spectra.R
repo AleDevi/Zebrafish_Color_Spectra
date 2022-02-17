@@ -236,6 +236,12 @@ LINEDOWNL<-LINEDOWN%>%group_by(ID) %>% pivot_wider(ID,names_from=NM5,values_from
 LINEUPL<-LINEUP%>%group_by(ID) %>% pivot_wider(ID,names_from=NM5,values_from =Reflectance)
 TAILL<-TAIL%>%group_by(ID) %>% pivot_wider(ID,names_from=NM5,values_from =Reflectance)
 
+group<-LINEDOWNL$ID
+LDBR<-rowSums(LINEDOWNL[,c(2:ncol(LINEDOWNL))])
+LUBR<-rowSums(LINEUPL[,c(2:ncol(LINEDOWNL))])
+TBR<-rowSums(TAILL[,c(2:ncol(TAILL))])
+
+
 library("FactoMineR")
 library("factoextra")
 
@@ -263,10 +269,10 @@ plot(T_PCA)
 fviz_eig(T_PCA)
 get_eigenvalue(T_PCA)
 ggplot()+geom_point(aes(y=T_PCA$rotation[,1],x=seq(300,700,5)),col="blue")+
-        geom_point(aes(y=T_PCA$rotation[,2],x=seq(300,700,5)),col="red")+
-        geom_point(aes(y=T_PCA$rotation[,3],x=seq(300,700,5)),col="green")#+
-        #coord_cartesian(ylim=c(-0.25,0.25))
-
+        geom_point(aes(y=T_PCA$rotation[,2],x=seq(300,700,5)),col="red")#+
+        #geom_point(aes(y=T_PCA$rotation[,3],x=seq(300,700,5)),col="green")#+
+        #?coord_cartesian(ylim=c(-0.25,0.25))
+?prcomp()
 
 PC.Values<-as.data.frame(cbind(LD_PCA$x[,c(1:2)],LU_PCA$x[,c(1:2)],T_PCA$x[,c(1:2)]))
 names(PC.Values)<-c("LD_PC1","LD_PC2","LU_PC1","LU_PC2","T_PC1","T_PC2")
@@ -274,6 +280,16 @@ PC.Values$ID<-TAILL[,1]
 PC.Values<-cbind(PC.Values$ID,PC.Values[,c(1:6)])
 names(PC.Values[,1])<-"ID"
 PC.Values$Sex<-substr(PC.Values$ID,1,1)
+PC.Values<-cbind(PC.Values,LDBR,LUBR,TBR)
+names(PC.Values)<-c("ID","LD_PC1","LD_PC2","LU_PC1","LU_PC2","T_PC1","T_PC2","Sex","LD_BR","LU_BR","T_BR")
+
+plot(PC.Values$LD_PC1,PC.Values$LD_BR)
+plot(PC.Values$LU_PC1,PC.Values$LU_BR)
+plot(PC.Values$T_PC1,PC.Values$T_BR)
+
+corrplot::corrplot(PC.Values[,c(2:7,9:11)])
+
+write.csv(PC.Values,"C:/Users/Color&Sound/Experiments/Padova/Zebrafish Odour Choice/ZebrafishSpectra/PCAVALUES.csv")
 m1<-lm(T_PC2~Sex,PC.Values)
 anova(m1)
 
