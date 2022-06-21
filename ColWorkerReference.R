@@ -1,3 +1,9 @@
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+library(zoo)
+
 ##The code below will generate the files .csv necessary as Objects standard
 ##for colour worker. The file has a structure like that:
 matrix(data=c(seq(from=400, to=700, by=5),rep("spectra",61),rep(0,61),rep(0,61)),
@@ -9,7 +15,7 @@ Spectra5
 #First thing is to remove the extra information in UV light, create the extra 2 variables and the name
 Colwork<-Spectra5 %>% filter(NM5>=400)
 Colwork[,c(5,6)]<-0
-Colwork[,7]<-str_c(Colwork$ID,Colwork$Body, sep = "", collapse = NULL)
+Colwork[,7]<-str_c(Colwork$Body,Colwork$ID, sep = "", collapse = NULL)
 Colwork<-Colwork[,c(3:7)]
 #check if we hawe the right amount of lines for each group
 table(Colwork[,5])
