@@ -20,6 +20,10 @@ Colwork<-Colwork[,c(3:7)]
 #check if we hawe the right amount of lines for each group
 table(Colwork[,5])
 
+#Should we generate a file for each individual or for each measure? At the moment it
+#is done for each individual: 3 measures for body part for individual. This will 
+#reasonably capture more of the variance observed
+
 #create N csv files starting from Colwork
 library(readr)
 Colwork %>%
