@@ -4,6 +4,10 @@ library(stringr)
 library(ggplot2)
 library(zoo)
 
+
+#a bit of bad code to merge, smooth, analyse colour specttra
+
+
 #from Wouter
 #files <- list.files("D:/DroppBoxx/Dropbox/Exp. Priming Brain Lines/Sperm Lines Velocities/Pre/", ".xls", full.names = TRUE)
 #frames <- lapply(files, read_xls, sheet = 1, skip = 9)
