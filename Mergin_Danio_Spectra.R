@@ -171,6 +171,7 @@ Spectra_average$Body<-substr(Spectra_average$BodyPart, 1,nchar(Spectra_average$B
 Spectra_average$NM1<-Spectra_average$NM %>% round(,0)
 Spectra_average2<-Spectra_average %>%filter %>% group_by(ID,Body,NM1) %>%  summarise(Reflectance=(mean(Reflectance))) 
 Spectra1<-Spectra_average2[,c(1:4)]
+               
 ##Below more grouping. It is easier to do it after the line above
 Spectra_average2$NM5<-rep(rep(c(rep(seq(300,695,5),each=5),700),times=3),times=72)
 Spectra_average2$NM10<-rep(rep(c(rep(seq(300,690,10),each=10),700),times=3),times=72)
