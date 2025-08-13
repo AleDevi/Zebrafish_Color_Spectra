@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  zebrafish-analysis:
+    build: .
+    container_name: zebrafish-color-spectra
+    ports:
+      - "3838:3838"
+    volumes:
+      # Mount data directory for persistent storage
+      - ./data:/app/data
+      # Mount source code for development (optional)
+      - ./src:/app/src
+    environment:
+      - R_LIBS=/usr/local/lib/R/site-library
+      - SHINY_HOST=0.0.0.0
+      - SHINY_PORT=3838
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3838/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - zebrafish-network
+
+  # Optional: Add RStudio Server for development
+  rstudio:
+    image: rocker/rstudio:4.1.2
+    container_name: zebrafish-rstudio
+    ports:
+      - "8787:8787"
+    environment:
+      - PASSWORD=zebrafish123
+      - ROOT=TRUE
+    volumes:
+      - ./data:/home/rstudio/data
+      - ./src:/home/rstudio/src
+      - ./app.R:/home/rstudio/app.R
+    restart: unless-stopped
+    networks:
+      - zebrafish-network
+
+networks:
+  zebrafish-network:
+    driver: bridge
+
+volumes:
+  data-volume:
