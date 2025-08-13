@@ -1,0 +1,40 @@
+# Git files
+.git/
+.gitignore
+
+# Documentation
+README.md
+PULL_REQUEST.md
+
+# Docker files (avoid recursive copying)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# R session files
+.RData
+.Rhistory
+.Rapp.history
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test files
+tests/
+*.test.R
+
+# Backup files
+*.bak
+*.backup
