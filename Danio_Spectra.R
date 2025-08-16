@@ -14,12 +14,12 @@ library(zoo)
 #names(frames) <- substr(basename(files), 1, nchar(basename(files)) - 4)
 #dat_pre <- bind_rows(frames, .id = "male_id")
 
-#setwd("C:/Users/Color&Sound/OneDrive/Desktop/ZebrafishSpectra/Experimental") ##temporary directory to save data
+#setwd("yourfolder") ##temporary directory to save data
 
 
 
 ###Getting the names of the datasets in folder (my dataset)
-filenames<-list.files("C:/Users/Color&Sound/Experiments/Padova/Zebrafish Odour Choice/ZebrafishSpectra/Experimental",full.names=T)
+filenames<-list.files("yourfolder",full.names=T)
 
 #Create a list used for its names. The names of this list will be used later
 listnames<-sapply(filenames[1:(length(filenames)-1)], 
@@ -30,7 +30,7 @@ listnames<-sapply(filenames[1:(length(filenames)-1)],
                   simplify = FALSE) ####
 
 #Change the names of the list removing the path
-names(listnames)<-sub("C:/Users/Color&Sound/Experiments/Padova/Zebrafish Odour Choice/ZebrafishSpectra/Experimental/", replacement="",x=names(listnames))
+names(listnames)<-sub("yourfolder", replacement="",x=names(listnames))
 
 #for some reason the dataframe in the names list has always one extra column
 #the function below removes it
@@ -55,7 +55,7 @@ lista<-sapply(filenames[1:(length(filenames)-1)],
               skip=9,
               simplify = FALSE) ####Per fare un file con una serie di "oggetti" 
 
-names(lista)<-sub("C:/Users/Color&Sound/Experiments/Padova/Zebrafish Odour Choice/ZebrafishSpectra/Experimental/", replacement="",x=names(lista))
+names(lista)<-sub("yourfolder", replacement="",x=names(lista))
 names(lista)<-sub(".tsv", replacement="",x=names(lista))
 
 ##remove rows out of NM interest to the datasets in the list. NB: these numbers works with 
@@ -65,7 +65,7 @@ lista2<-lapply(lista, function(x)
                                        #between 280 and 700
 
 ##also remember to read the WL
-Wavelength<-read.table("C:/Users/Color&Sound/Experiments/Padova/Zebrafish Odour Choice/ZebrafishSpectra/Experimental/Wavelength.txt", header=T)
+Wavelength<-read.table("yourfolder/Wavelength.txt", header=T)
 Wavelength<-as.numeric(Wavelength[c(-278:-1,-1458:-2056),])
 
 length(Wavelength)
